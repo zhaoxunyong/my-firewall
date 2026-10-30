@@ -1,0 +1,20 @@
+#!/bin/sh /etc/rc.common
+
+START=20
+STOP=10
+
+start() {
+	/usr/libexec/myfirewall apply
+}
+
+reload() {
+	/usr/libexec/myfirewall apply
+}
+
+restart() {
+	/usr/libexec/myfirewall apply
+}
+
+stop() {
+	return 0
+}

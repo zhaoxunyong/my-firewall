@@ -1,0 +1,15 @@
+{
+	"admin/services/myfirewall": {
+		"title": "MyFirewall",
+		"order": 80,
+		"action": {
+			"type": "view",
+			"path": "myfirewall/rules-v8"
+		},
+		"depends": {
+			"acl": [ "luci-app-myfirewall" ],
+			"fs": { "/sbin/fw4": "executable" },
+			"uci": { "myfirewall": true }
+		}
+	}
+}

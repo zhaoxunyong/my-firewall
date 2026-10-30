@@ -1,0 +1,4 @@
+{
+	"config": "myfirewall",
+	"init": "myfirewall"
+}

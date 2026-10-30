@@ -1,0 +1,104 @@
+#!/bin/sh
+
+set -eu
+
+ROOT="$(CDPATH= cd -- "$(dirname "$0")/.." && pwd)"
+TEST_DIR="$(mktemp -d)"
+trap 'rm -rf "$TEST_DIR"' EXIT HUP INT TERM
+
+cat > "$TEST_DIR/functions.sh" <<'EOF'
+config_load() {
+	return 0
+}
+
+config_get_bool() {
+	_var="$1"
+	_section="$2"
+	_option="$3"
+	_default="$4"
+
+	case "$_section:$_option" in
+		settings:enabled) eval "$_var=${TEST_GLOBAL_ENABLED:-1}" ;;
+		rule_1:enabled) eval "$_var=1" ;;
+		rule_1:timed) eval "$_var=1" ;;
+		rule_2:enabled) eval "$_var=0" ;;
+		rule_3:enabled) eval "$_var=1" ;;
+		rule_3:timed) eval "$_var=0" ;;
+		*) eval "$_var=$_default" ;;
+	esac
+}
+
+config_get() {
+	_var="$1"
+	_section="$2"
+	_option="$3"
+	_default="$4"
+
+	case "$_section:$_option" in
+		rule_1:name) eval "$_var='客厅电视'" ;;
+		rule_1:match) eval "$_var=both" ;;
+		rule_1:src_mac) eval "$_var='aa-bb-cc-dd-ee-01'" ;;
+		rule_1:src_ip) eval "$_var='192.168.1.20'" ;;
+		rule_1:protocol) eval "$_var=tcp_udp" ;;
+		rule_1:start_time) eval "$_var='22:30:00'" ;;
+		rule_1:stop_time) eval "$_var='06:00:00'" ;;
+		rule_1:weekdays) eval "$_var='Mon Wed'" ;;
+		rule_3:name) eval "$_var='IPv6 主机'" ;;
+		rule_3:match) eval "$_var=ip" ;;
+		rule_3:src_ip) eval "$_var='2001:db8::20'" ;;
+		rule_3:protocol) eval "$_var=tcp" ;;
+		*) eval "$_var=$_default" ;;
+	esac
+}
+
+config_foreach() {
+	_callback="$1"
+	_type="$2"
+
+	[ "$_type" = "rule" ] || return 0
+	[ "${TEST_HAS_RULES:-1}" = "1" ] || return 0
+	"$_callback" rule_1
+	"$_callback" rule_2
+	"$_callback" rule_3
+}
+EOF
+
+cat > "$TEST_DIR/nft" <<'EOF'
+#!/bin/sh
+[ "$1" = "-c" ] || exit 2
+grep -q 'table inet myfirewall_validate' "$3"
+EOF
+chmod +x "$TEST_DIR/nft"
+
+MYFIREWALL_FUNCTIONS_LIB="$TEST_DIR/functions.sh" \
+MYFIREWALL_NFT_FILE="$TEST_DIR/rules.nft" \
+MYFIREWALL_NFT_BIN="$TEST_DIR/nft" \
+	"$ROOT/package/luci-app-myfirewall/root/usr/libexec/myfirewall" generate
+
+grep -q 'ether saddr AA:BB:CC:DD:EE:01' "$TEST_DIR/rules.nft"
+grep -q 'ip saddr 192.168.1.20' "$TEST_DIR/rules.nft"
+grep -q 'meta day { Monday, Wednesday }' "$TEST_DIR/rules.nft"
+grep -q 'meta hour "00:00:00"-"06:00:00"' "$TEST_DIR/rules.nft"
+grep -q 'meta hour "22:30:00"-"23:59:59"' "$TEST_DIR/rules.nft"
+grep -q 'ip6 saddr 2001:db8::20' "$TEST_DIR/rules.nft"
+grep -q 'meta l4proto tcp ' "$TEST_DIR/rules.nft"
+! grep -q 'should-not-render' "$TEST_DIR/rules.nft"
+[ "$(grep -c 'counter drop' "$TEST_DIR/rules.nft")" -eq 3 ]
+
+printf 'stale\n' > "$TEST_DIR/rules.nft"
+TEST_GLOBAL_ENABLED=0 \
+MYFIREWALL_FUNCTIONS_LIB="$TEST_DIR/functions.sh" \
+MYFIREWALL_NFT_FILE="$TEST_DIR/rules.nft" \
+MYFIREWALL_NFT_BIN="$TEST_DIR/nft" \
+	"$ROOT/package/luci-app-myfirewall/root/usr/libexec/myfirewall" generate
+[ ! -f "$TEST_DIR/rules.nft" ]
+
+printf 'stale\n' > "$TEST_DIR/rules.nft"
+TEST_HAS_RULES=0 \
+MYFIREWALL_FUNCTIONS_LIB="$TEST_DIR/functions.sh" \
+MYFIREWALL_NFT_FILE="$TEST_DIR/rules.nft" \
+MYFIREWALL_NFT_BIN="$TEST_DIR/nft" \
+	"$ROOT/package/luci-app-myfirewall/root/usr/libexec/myfirewall" generate
+[ ! -f "$TEST_DIR/rules.nft" ]
+
+printf 'MyFirewall rule generation tests passed.\n'

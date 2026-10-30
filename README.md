@@ -1,4 +1,4 @@
-# MyFirewall for OpenWrt 24.10
+# MyFirewall for OpenWrt 24.10 and 25.12
 
 将 `proxy-block.sh` 的外部流量拦截能力做成 LuCI 页面，入口位于：
 
@@ -14,16 +14,28 @@
 - 支持按星期、开始时间和结束时间限制；结束时间早于开始时间时按跨午夜处理。
 - “保存并应用”后自动重新生成 nftables 规则并重载 fw4。
 
-## 安装
+## OpenWrt 24.10 安装（opkg）
 
 在 OpenWrt 24.10（opkg）上执行：
 
 ```sh
 opkg update
-opkg install ./luci-app-myfirewall_1.0.0-r7_all.ipk
+opkg install ./luci-app-myfirewall_1.0.0-r8_all.ipk
 ```
 
 也可以在 LuCI 的“系统 -> 软件包”中上传安装。
+
+## OpenWrt 25.12 安装（apk）
+
+OpenWrt 25.12 使用 APK v3 包格式，请安装对应的 `.apk`：
+
+```sh
+apk add --allow-untrusted ./luci-app-myfirewall-1.0.0-r8.apk
+```
+
+也可以在 LuCI 的“系统 -> 软件包”中上传安装。由于这是本地构建包，
+没有使用 OpenWrt 官方私钥签名，因此命令行安装时需要
+`--allow-untrusted`。
 
 安装后如果菜单尚未出现，退出 LuCI 后重新登录，或执行：
 
@@ -50,6 +62,12 @@ fw4 reload
 
 ```sh
 python build-ipk.py
+```
+
+在 Linux、WSL 或 OpenWrt 25.12 SDK 环境中生成 APK：
+
+```sh
+sh build-apk.sh
 ```
 
 也可以把 `package/luci-app-myfirewall` 放入 LuCI feeds 的

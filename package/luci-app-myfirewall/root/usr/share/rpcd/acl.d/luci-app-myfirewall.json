@@ -1,0 +1,11 @@
+{
+	"luci-app-myfirewall": {
+		"description": "通过 LuCI 管理 MyFirewall 外部流量拦截规则",
+		"read": {
+			"uci": [ "myfirewall" ]
+		},
+		"write": {
+			"uci": [ "myfirewall" ]
+		}
+	}
+}
