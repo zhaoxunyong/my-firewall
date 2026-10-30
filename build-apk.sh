@@ -6,7 +6,7 @@ ROOT="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
 SOURCE_ROOT="$ROOT/package/luci-app-myfirewall/root"
 DIST="$ROOT/dist"
 PKG_NAME="luci-app-myfirewall"
-PKG_VERSION="1.0.0-r8"
+PKG_VERSION="1.0.0-r10"
 OUTPUT="$DIST/$PKG_NAME-$PKG_VERSION.apk"
 
 if ! command -v apk >/dev/null 2>&1; then
@@ -67,12 +67,13 @@ default_postinst
 
 [ -n "${IPKG_INSTROOT}" ] || {
 	/etc/init.d/myfirewall enable >/dev/null 2>&1
-	/etc/init.d/myfirewall restart
-	/etc/init.d/ucitrack restart >/dev/null 2>&1
 	rm -f /tmp/luci-indexcache /tmp/luci-indexcache.*
 	rm -rf /tmp/luci-modulecache/
-	/etc/init.d/rpcd reload >/dev/null 2>&1
-	/etc/init.d/uhttpd restart >/dev/null 2>&1
+	(
+		sleep 1
+		/etc/init.d/myfirewall restart
+		/etc/init.d/ucitrack restart >/dev/null 2>&1
+	) </dev/null >/tmp/myfirewall-install.log 2>&1 &
 }
 exit 0
 EOF

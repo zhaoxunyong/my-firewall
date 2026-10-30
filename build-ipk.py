@@ -14,7 +14,7 @@ DIST = ROOT / "dist"
 
 NAME = "luci-app-myfirewall"
 VERSION = "1.0.0"
-RELEASE = "r8"
+RELEASE = "r10"
 ARCH = "all"
 FILENAME = f"{NAME}_{VERSION}-{RELEASE}_{ARCH}.ipk"
 
@@ -95,10 +95,13 @@ def main():
         "#!/bin/sh\n"
         "[ -n \"$IPKG_INSTROOT\" ] && exit 0\n"
         "rm -f /tmp/luci-indexcache /tmp/luci-indexcache.*\n"
+        "rm -rf /tmp/luci-modulecache/\n"
         "/etc/init.d/myfirewall enable >/dev/null 2>&1\n"
-        "/etc/init.d/myfirewall restart\n"
-        "/etc/init.d/ucitrack restart >/dev/null 2>&1\n"
-        "/etc/init.d/uhttpd restart >/dev/null 2>&1\n"
+        "(\n"
+        "  sleep 1\n"
+        "  /etc/init.d/myfirewall restart\n"
+        "  /etc/init.d/ucitrack restart >/dev/null 2>&1\n"
+        ") </dev/null >/tmp/myfirewall-install.log 2>&1 &\n"
         "exit 0\n"
     ).encode("utf-8")
 

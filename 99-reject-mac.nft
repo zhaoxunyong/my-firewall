@@ -1,0 +1,17 @@
+chain reject_mac_early {
+        type filter hook prerouting priority mangle - 20; policy accept;
+
+	ether saddr A8:77:E5:0C:A7:4E fib daddr type != local meta l4proto { tcp, udp } counter drop comment "TV-Allday"
+
+	ether saddr F8:E4:3B:63:C8:14 fib daddr type != local meta l4proto { tcp, udp } meta hour "20:00:00"-"23:59:59" counter drop comment "TVBox-Allday1"
+	ether saddr F8:E4:3B:63:C8:14 fib daddr type != local meta l4proto { tcp, udp } meta hour "00:00:00"-"06:30:00" counter drop comment "TVBox-Allday2"
+
+	ether saddr A2:60:CE:CC:E0:55 fib daddr type != local meta l4proto { tcp, udp } meta hour "22:00:00"-"23:59:59" counter drop comment "Eino-Allday1"
+	ether saddr A2:60:CE:CC:E0:55 fib daddr type != local meta l4proto { tcp, udp } meta hour "00:00:00"-"08:00:00" counter drop comment "Eino-Allday2"
+	
+	ether saddr 72:19:4D:54:A5:BB fib daddr type != local meta l4proto { tcp, udp } meta hour "00:00:00"-"13:00:00" counter drop comment "Peter-Pad-Allday1"
+	ether saddr 72:19:4D:54:A5:BB fib daddr type != local meta l4proto { tcp, udp } meta hour "14:00:00"-"15:40:00" counter drop comment "Peter-Pad-Allday2"
+	ether saddr 72:19:4D:54:A5:BB fib daddr type != local meta l4proto { tcp, udp } meta hour "16:50:00"-"18:09:00" counter drop comment "Peter-Pad-Allday3"
+	ether saddr 72:19:4D:54:A5:BB fib daddr type != local meta l4proto { tcp, udp } meta day { Thursday } meta hour "19:20:00"-"23:59:59" counter drop comment "Peter-Pad-Thursday"
+	ether saddr 72:19:4D:54:A5:BB fib daddr type != local meta l4proto { tcp, udp } meta day { Monday, Tuesday, Wednesday, Friday, Saturday, Sunday } meta hour "18:50:00"-"23:59:59" counter drop comment "Peter-Pad-Non-Thursday"
+}

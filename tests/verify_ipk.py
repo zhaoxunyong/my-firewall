@@ -6,7 +6,7 @@ import tarfile
 
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-IPK = ROOT / "dist" / "luci-app-myfirewall_1.0.0-r8_all.ipk"
+IPK = ROOT / "dist" / "luci-app-myfirewall_1.0.0-r10_all.ipk"
 
 
 def read_ipk_outer(data):
@@ -51,13 +51,15 @@ def main():
 
     control_text = control["./control"][0].decode("utf-8")
     assert "Package: luci-app-myfirewall\n" in control_text
-    assert "Version: 1.0.0-r8\n" in control_text
+    assert "Version: 1.0.0-r10\n" in control_text
     assert "Architecture: all\n" in control_text
     assert control["./postinst"][1] & 0o111
     assert control["./prerm"][1] & 0o111
     postinst_text = control["./postinst"][0].decode("utf-8")
     assert "/etc/init.d/ucitrack restart" in postinst_text
     assert "/etc/init.d/myfirewall restart" in postinst_text
+    assert "uhttpd restart" not in postinst_text
+    assert "&\n" in postinst_text
 
     expected = {
         "./etc/config/myfirewall": False,
@@ -66,16 +68,20 @@ def main():
         "./usr/share/luci/menu.d/luci-app-myfirewall.json": False,
         "./usr/share/rpcd/acl.d/luci-app-myfirewall.json": False,
         "./usr/share/ucitrack/luci-app-myfirewall.json": False,
-        "./www/luci-static/resources/view/myfirewall/rules-v8.js": False,
+        "./www/luci-static/resources/view/myfirewall/rules-v10.js": False,
     }
 
     for name, executable in expected.items():
         assert name in data, f"缺少 {name}"
         assert bool(data[name][1] & 0o111) == executable, f"{name} 权限不正确"
 
-    view = data["./www/luci-static/resources/view/myfirewall/rules-v8.js"][0].decode("utf-8")
+    view = data["./www/luci-static/resources/view/myfirewall/rules-v10.js"][0].decode("utf-8")
     assert "].concat(sourceText(section_id))" in view
     assert "o = s.option(form.MultiValue, 'weekdays'" in view
+    assert "o = s.option(form.DynamicList, 'src_mac'" in view
+    assert "o = s.option(form.DynamicList, 'src_ip'" in view
+    assert "o.datatype = 'ipaddr'" not in view
+    assert "if (value == null || value == '')" in view
 
     print(f"IPK verification passed: {IPK}")
 

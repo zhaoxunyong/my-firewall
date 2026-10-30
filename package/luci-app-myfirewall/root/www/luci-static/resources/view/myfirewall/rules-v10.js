@@ -14,19 +14,86 @@ function protocolText(protocol) {
 	}
 }
 
+function validIPAddress(value) {
+	const parts = String(value || '').trim().split('/');
+	const address = parts[0];
+	const prefix = parts[1];
+
+	if (parts.length > 2)
+		return false;
+
+	if (/^\d{1,3}(\.\d{1,3}){3}$/.test(address)) {
+		const octets = address.split('.');
+
+		for (let i = 0; i < octets.length; i++)
+			if (+octets[i] > 255)
+				return false;
+
+		return prefix == null || (/^\d{1,2}$/.test(prefix) && +prefix <= 32);
+	}
+
+	if (address.indexOf(':') == -1 || !/^[0-9A-Fa-f:.]+$/.test(address))
+		return false;
+
+	if (prefix != null && (!/^\d{1,3}$/.test(prefix) || +prefix > 128))
+		return false;
+
+	try {
+		new URL('http://[' + address + ']/');
+		return true;
+	}
+	catch (e) {
+		return false;
+	}
+}
+
+function normalizeAddressValues(value, uppercase) {
+	const values = [];
+
+	L.toArray(value).forEach(function(value) {
+		value = String(value || '').trim();
+
+		if (!value)
+			return;
+
+		value = uppercase ? value.toUpperCase().replace(/-/g, ':') : value.toLowerCase();
+		if (values.indexOf(value) == -1)
+			values.push(value);
+	});
+
+	return values;
+}
+
+function addressValues(section_id, option, uppercase) {
+	return normalizeAddressValues(uci.get('myfirewall', section_id, option), uppercase);
+}
+
+function addressNode(label, values) {
+	const nodes = [ E('strong', label), ' ' ];
+
+	values.forEach(function(value, index) {
+		if (index)
+			nodes.push(E('br'));
+
+		nodes.push(E('var', value));
+	});
+
+	return E('span', nodes);
+}
+
 function sourceText(section_id) {
 	const match = uci.get('myfirewall', section_id, 'match') || 'both';
-	const mac = uci.get('myfirewall', section_id, 'src_mac');
-	const ip = uci.get('myfirewall', section_id, 'src_ip');
+	const macs = addressValues(section_id, 'src_mac', true);
+	const ips = addressValues(section_id, 'src_ip', false);
 	const nodes = [];
 
-	if (mac && (match == 'mac' || match == 'both'))
-		nodes.push(E('span', [ E('strong', _('MAC')), ' ', E('var', mac.toUpperCase()) ]));
+	if (macs.length && (match == 'mac' || match == 'both'))
+		nodes.push(addressNode(_('MAC'), macs));
 
-	if (ip && (match == 'ip' || match == 'both')) {
+	if (ips.length && (match == 'ip' || match == 'both')) {
 		if (nodes.length)
 			nodes.push(E('br'));
-		nodes.push(E('span', [ E('strong', _('IP')), ' ', E('var', ip) ]));
+		nodes.push(addressNode(_('IP'), ips));
 	}
 
 	return nodes.length ? nodes : [ E('em', _('未配置来源')) ];
@@ -57,7 +124,7 @@ return view.extend({
 		let m, s, o;
 
 		m = new form.Map('myfirewall', _('MyFirewall'),
-			_('界面版本 r8。拦截指定 MAC/IP 设备前往非本机地址的 TCP/UDP 外部连接。规则由 fw4 和 nftables 执行。'));
+			_('界面版本 r10。拦截指定 MAC/IP 设备前往非本机地址的 TCP/UDP 外部连接。规则由 fw4 和 nftables 执行。'));
 
 		s = m.section(form.TypedSection, 'settings', _('全局设置'));
 		s.anonymous = true;
@@ -97,8 +164,8 @@ return view.extend({
 			if (value)
 				return value;
 
-			const hasMac = !!uci.get('myfirewall', section_id, 'src_mac');
-			const hasIp = !!uci.get('myfirewall', section_id, 'src_ip');
+			const hasMac = addressValues(section_id, 'src_mac', false).length > 0;
+			const hasIp = addressValues(section_id, 'src_ip', false).length > 0;
 
 			if (hasMac && hasIp)
 				return 'both';
@@ -110,34 +177,54 @@ return view.extend({
 			return 'both';
 		};
 
-		o = s.option(form.Value, 'src_mac', _('源 MAC 地址'));
-		o.placeholder = _('AA:BB:CC:DD:EE:FF');
+		o = s.option(form.DynamicList, 'src_mac', _('源 MAC 地址'));
+		o.placeholder = _('输入 MAC，例如 AA:BB:CC:DD:EE:FF，然后点击 +');
 		o.rmempty = false;
 		o.modalonly = true;
 		o.depends('match', 'mac');
 		o.depends('match', 'both');
-		o.description = _('格式示例：AA:BB:CC:DD:EE:FF');
+		o.description = _('可连续添加多个 MAC，规则命中其中任意一个。');
 		o.validate = function(section_id, value) {
-			if (!value || /^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/.test(value))
+			if (value == null || value == '')
 				return true;
 
-			return _('请输入有效的 MAC 地址');
+			const values = L.toArray(value);
+
+			for (let i = 0; i < values.length; i++)
+				if (!/^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/.test(String(values[i]).trim()))
+					return _('请输入有效的 MAC 地址');
+
+			return true;
 		};
 		o.write = function(section_id, value) {
-			return this.super('write', [
-				section_id,
-				value ? value.toUpperCase().replace(/-/g, ':') : ''
-			]);
+			return this.super('write', [ section_id, normalizeAddressValues(value, true) ]);
 		};
 
-		o = s.option(form.Value, 'src_ip', _('源 IP 地址'));
-		o.placeholder = _('192.168.1.100 或 2001:db8::100');
-		o.datatype = 'ipaddr';
+		o = s.option(form.DynamicList, 'src_ip', _('源 IP 地址'));
+		o.placeholder = _('输入 IPv4/IPv6 地址，然后点击 +');
 		o.rmempty = false;
 		o.modalonly = true;
 		o.depends('match', 'ip');
 		o.depends('match', 'both');
-		o.description = _('支持 IPv4 和 IPv6，例如 192.168.1.100 或 2001:db8::100。');
+		o.description = _('可连续添加多个 IPv4/IPv6 地址，规则命中其中任意一个。');
+		o.validate = function(section_id, value) {
+			if (value == null || value == '')
+				return true;
+
+			const values = L.toArray(value);
+
+			for (let i = 0; i < values.length; i++) {
+				const address = String(values[i]).trim();
+
+				if (!validIPAddress(address))
+					return _('请输入有效的 IPv4 或 IPv6 地址');
+			}
+
+			return true;
+		};
+		o.write = function(section_id, value) {
+			return this.super('write', [ section_id, normalizeAddressValues(value, false) ]);
+		};
 
 		o = s.option(form.ListValue, 'protocol', _('协议'));
 		o.value('tcp_udp', _('TCP 和 UDP'));
