@@ -52,6 +52,7 @@ config_get() {
 		rule_3:src_ip_ITEM1) eval "$_var='192.168.1.30'" ;;
 		rule_3:src_ip_ITEM2) eval "$_var='2001:db8::20'" ;;
 		rule_3:protocol) eval "$_var=tcp" ;;
+		rule_3:action) eval "$_var=reject" ;;
 		rule_4:name) eval "$_var='多设备 MAC 和 IP'" ;;
 		rule_4:match) eval "$_var=both" ;;
 		rule_4:src_mac_LENGTH) eval "$_var=2" ;;
@@ -62,9 +63,14 @@ config_get() {
 		rule_4:src_ip) eval "$_var='192.168.1.40 192.168.1.41'" ;;
 		rule_4:src_ip_ITEM1) eval "$_var='192.168.1.40'" ;;
 		rule_4:src_ip_ITEM2) eval "$_var='192.168.1.41'" ;;
+		rule_4:action) eval "$_var=accept" ;;
 		rule_5:name) eval "$_var='旧版单值配置'" ;;
 		rule_5:match) eval "$_var=mac" ;;
 		rule_5:src_mac) eval "$_var='aa-bb-cc-dd-ee-50'" ;;
+		rule_6:name) eval "$_var='无效动作'" ;;
+		rule_6:match) eval "$_var=ip" ;;
+		rule_6:src_ip) eval "$_var='192.168.1.60'" ;;
+		rule_6:action) eval "$_var=invalid" ;;
 		*) eval "$_var=$_default" ;;
 	esac
 }
@@ -94,6 +100,7 @@ config_foreach() {
 	"$_callback" rule_3
 	"$_callback" rule_4
 	"$_callback" rule_5
+	"$_callback" rule_6
 }
 EOF
 
@@ -119,7 +126,10 @@ grep -q 'ether saddr { AA:BB:CC:DD:EE:10, AA:BB:CC:DD:EE:11 } ip saddr { 192.168
 grep -q 'ether saddr { AA:BB:CC:DD:EE:50 }' "$TEST_DIR/rules.nft"
 grep -q 'meta l4proto tcp ' "$TEST_DIR/rules.nft"
 ! grep -q 'should-not-render' "$TEST_DIR/rules.nft"
-[ "$(grep -c 'counter drop' "$TEST_DIR/rules.nft")" -eq 6 ]
+! grep -q '192.168.1.60' "$TEST_DIR/rules.nft"
+[ "$(grep -c 'counter drop' "$TEST_DIR/rules.nft")" -eq 3 ]
+[ "$(grep -c 'counter reject' "$TEST_DIR/rules.nft")" -eq 2 ]
+[ "$(grep -c 'counter accept' "$TEST_DIR/rules.nft")" -eq 1 ]
 
 printf 'stale\n' > "$TEST_DIR/rules.nft"
 TEST_GLOBAL_ENABLED=0 \

@@ -14,6 +14,17 @@ function protocolText(protocol) {
 	}
 }
 
+function actionInfo(action) {
+	switch (action) {
+	case 'accept':
+		return { class: 'label label-success', text: _('接受') };
+	case 'reject':
+		return { class: 'label label-warning', text: _('拒绝') };
+	default:
+		return { class: 'label label-danger', text: _('丢弃') };
+	}
+}
+
 function validIPAddress(value) {
 	const parts = String(value || '').trim().split('/');
 	const address = parts[0];
@@ -124,7 +135,7 @@ return view.extend({
 		let m, s, o;
 
 		m = new form.Map('myfirewall', _('MyFirewall'),
-			_('界面版本 r10。拦截指定 MAC/IP 设备前往非本机地址的 TCP/UDP 外部连接。规则由 fw4 和 nftables 执行。'));
+			_('界面版本 r12。匹配指定 MAC/IP 设备前往非本机地址的 TCP/UDP 外部连接。规则由 fw4 和 nftables 执行，用于解决代理后自带防火墙规则不生效的问题。'));
 
 		s = m.section(form.TypedSection, 'settings', _('全局设置'));
 		s.anonymous = true;
@@ -242,6 +253,23 @@ return view.extend({
 			return 'tcp_udp';
 		};
 
+		o = s.option(form.ListValue, 'action', _('动作'));
+		o.value('drop', _('丢弃 - 静默阻断'));
+		o.value('reject', _('拒绝 - 返回失败响应'));
+		o.value('accept', _('接受 - 匹配后跳出 MyFirewall'));
+		o.default = 'drop';
+		o.rmempty = false;
+		o.modalonly = true;
+		o.description = _('“接受”只结束 MyFirewall 当前链的匹配，仍会经过 OpenWrt 的其他防火墙链。');
+		o.cfgvalue = function(section_id) {
+			const value = uci.get('myfirewall', section_id, 'action');
+
+			if (value == 'accept' || value == 'reject')
+				return value;
+
+			return 'drop';
+		};
+
 		o = s.option(form.DummyValue, '_match', _('匹配条件'));
 		o.modalonly = false;
 		o.textvalue = function(section_id) {
@@ -260,8 +288,10 @@ return view.extend({
 
 		o = s.option(form.DummyValue, '_action', _('动作'));
 		o.modalonly = false;
-		o.textvalue = function() {
-			return E('span', { 'class': 'label label-danger' }, _('丢弃'));
+		o.textvalue = function(section_id) {
+			const info = actionInfo(uci.get('myfirewall', section_id, 'action'));
+
+			return E('span', { 'class': info.class }, info.text);
 		};
 
 		o = s.option(form.DummyValue, '_time', _('时间'));

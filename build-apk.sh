@@ -6,7 +6,7 @@ ROOT="$(CDPATH= cd -- "$(dirname "$0")" && pwd)"
 SOURCE_ROOT="$ROOT/package/luci-app-myfirewall/root"
 DIST="$ROOT/dist"
 PKG_NAME="luci-app-myfirewall"
-PKG_VERSION="1.0.0-r10"
+PKG_VERSION="1.0.0-r12"
 OUTPUT="$DIST/$PKG_NAME-$PKG_VERSION.apk"
 
 if ! command -v apk >/dev/null 2>&1; then

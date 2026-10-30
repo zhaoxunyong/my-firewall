@@ -135,7 +135,7 @@ emit_rule_line() {
 		_time_match="meta hour \"${_start}\"-\"${_stop}\""
 	fi
 
-	printf '        %s%s counter drop' "$_base_match" "$_time_match"
+	printf '        %s%s counter %s' "$_base_match" "$_time_match" "$action"
 
 	if [ -n "$_comment" ]; then
 		printf ' comment "%s"' "$_comment"
@@ -160,7 +160,7 @@ emit_time_rules() {
 
 emit_rule() {
 	local section="$1"
-	local enabled name match protocol timed start_time stop_time weekdays
+	local enabled name match protocol action timed start_time stop_time weekdays
 	local _mac_values _ip4_values _ip6_values _mac_count _ip_count
 	local _mac_invalid _ip_invalid _mac_match
 
@@ -170,6 +170,7 @@ emit_rule() {
 	config_get name "$section" name "未命名规则"
 	config_get match "$section" match "both"
 	config_get protocol "$section" protocol "tcp_udp"
+	config_get action "$section" action "drop"
 	config_get_bool timed "$section" timed 0
 	config_get start_time "$section" start_time ""
 	config_get stop_time "$section" stop_time ""
@@ -225,6 +226,15 @@ emit_rule() {
 			;;
 		*)
 			log "忽略规则 '$name'：未知协议 '$protocol'"
+			return 0
+			;;
+	esac
+
+	case "$action" in
+		drop|reject|accept)
+			;;
+		*)
+			log "忽略规则 '$name'：未知动作 '$action'"
 			return 0
 			;;
 	esac

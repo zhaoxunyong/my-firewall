@@ -9,6 +9,7 @@
 - 参考“防火墙 -> 通信规则”，使用可排序、可筛选的规则表格。
 - 支持“仅 MAC”“仅 IP”“MAC + IP”三种来源匹配，并可一次添加多个 MAC/IP。
 - 支持 TCP、UDP 或两者同时匹配。
+- 支持丢弃、拒绝、接受三种规则动作，旧规则默认按丢弃执行。
 - 拦截目标是所有“非本机地址”，不会拦截访问路由器自身的流量。
 - 支持启用/禁用单条规则。
 - 支持按星期、开始时间和结束时间限制；结束时间早于开始时间时按跨午夜处理。
@@ -20,7 +21,7 @@
 
 ```sh
 opkg update
-opkg install ./luci-app-myfirewall_1.0.0-r10_all.ipk
+opkg install ./luci-app-myfirewall_1.0.0-r12_all.ipk
 ```
 
 也可以在 LuCI 的“系统 -> 软件包”中上传安装。
@@ -30,7 +31,7 @@ opkg install ./luci-app-myfirewall_1.0.0-r10_all.ipk
 OpenWrt 25.12 使用 APK v3 包格式，请安装对应的 `.apk`：
 
 ```sh
-apk add --allow-untrusted ./luci-app-myfirewall-1.0.0-r10.apk
+apk add --allow-untrusted ./luci-app-myfirewall-1.0.0-r12.apk
 ```
 
 也可以在 LuCI 的“系统 -> 软件包”中上传安装。由于这是本地构建包，

@@ -4,7 +4,7 @@
 		"order": 80,
 		"action": {
 			"type": "view",
-			"path": "myfirewall/rules-v10"
+			"path": "myfirewall/rules-v12"
 		},
 		"depends": {
 			"acl": [ "luci-app-myfirewall" ],

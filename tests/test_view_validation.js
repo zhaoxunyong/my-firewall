@@ -7,7 +7,7 @@ const vm = require('vm');
 
 const source = fs.readFileSync(path.join(
 	__dirname,
-	'../package/luci-app-myfirewall/root/www/luci-static/resources/view/myfirewall/rules-v10.js'
+	'../package/luci-app-myfirewall/root/www/luci-static/resources/view/myfirewall/rules-v12.js'
 ), 'utf8');
 const start = source.indexOf('function validIPAddress');
 const end = source.indexOf('\n\nfunction normalizeAddressValues', start);
