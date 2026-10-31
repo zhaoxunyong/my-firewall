@@ -1,0 +1,214 @@
+
+config defaults
+	option syn_flood '1'
+	option input 'REJECT'
+	option output 'ACCEPT'
+	option forward 'REJECT'
+
+config zone
+	option name 'lan'
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'ACCEPT'
+	list network 'lan'
+
+config zone
+	option name 'wan'
+	option input 'REJECT'
+	option output 'ACCEPT'
+	option forward 'REJECT'
+	option masq '1'
+	option mtu_fix '1'
+	list network 'wan6'
+
+config forwarding
+	option src 'lan'
+	option dest 'wan'
+
+config rule
+	option name 'Allow-DHCP-Renew'
+	option src 'wan'
+	option proto 'udp'
+	option dest_port '68'
+	option target 'ACCEPT'
+	option family 'ipv4'
+
+config rule
+	option name 'Allow-Ping'
+	option src 'wan'
+	option proto 'icmp'
+	option icmp_type 'echo-request'
+	option family 'ipv4'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-IGMP'
+	option src 'wan'
+	option proto 'igmp'
+	option family 'ipv4'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-DHCPv6'
+	option src 'wan'
+	option proto 'udp'
+	option dest_port '546'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-MLD'
+	option src 'wan'
+	option proto 'icmp'
+	option src_ip 'fe80::/10'
+	list icmp_type '130/0'
+	list icmp_type '131/0'
+	list icmp_type '132/0'
+	list icmp_type '143/0'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-ICMPv6-Input'
+	option src 'wan'
+	option proto 'icmp'
+	list icmp_type 'echo-request'
+	list icmp_type 'echo-reply'
+	list icmp_type 'destination-unreachable'
+	list icmp_type 'packet-too-big'
+	list icmp_type 'time-exceeded'
+	list icmp_type 'bad-header'
+	list icmp_type 'unknown-header-type'
+	list icmp_type 'router-solicitation'
+	list icmp_type 'neighbour-solicitation'
+	list icmp_type 'router-advertisement'
+	list icmp_type 'neighbour-advertisement'
+	option limit '1000/sec'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-ICMPv6-Forward'
+	option src 'wan'
+	option dest '*'
+	option proto 'icmp'
+	list icmp_type 'echo-request'
+	list icmp_type 'echo-reply'
+	list icmp_type 'destination-unreachable'
+	list icmp_type 'packet-too-big'
+	list icmp_type 'time-exceeded'
+	list icmp_type 'bad-header'
+	list icmp_type 'unknown-header-type'
+	option limit '1000/sec'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-IPSec-ESP'
+	option src 'wan'
+	option dest 'lan'
+	option proto 'esp'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-ISAKMP'
+	option src 'wan'
+	option dest 'lan'
+	option dest_port '500'
+	option proto 'udp'
+	option target 'ACCEPT'
+
+config rule
+	option src 'lan'
+	option name 'TV-Allday'
+	option target 'REJECT'
+	option start_time '00:00:00'
+	option stop_time '23:59:59'
+	option family 'ipv4'
+	option dest '*'
+	list src_mac 'A8:77:E5:0C:A7:4E'
+	option enabled '0'
+
+config rule
+	option src 'lan'
+	option dest '*'
+	option name 'TVBox-20:00-06:30'
+	option target 'REJECT'
+	option start_time '20:00:00'
+	option stop_time '06:30:00'
+	list src_mac 'F8:E4:3B:63:C8:14'
+	list src_mac '80:9D:65:40:03:7C'
+	list src_mac '9C:3E:53:0F:7D:1F'
+	list src_mac '9C:3E:53:24:D5:F5'
+	option family 'ipv4'
+	option enabled '0'
+
+config rule
+	option src 'lan'
+	option dest '*'
+	option name 'Eino-22:00-08:00'
+	option target 'REJECT'
+	option start_time '22:00:00'
+	option stop_time '08:00:00'
+	option family 'ipv4'
+	list src_mac 'A2:60:CE:CC:E0:55'
+	list src_mac 'A2:1B:86:04:DB:FA'
+	option enabled '0'
+
+config rule
+	option src 'lan'
+	option dest '*'
+	option name 'Peter-Pad-00:00-13:00'
+	option target 'REJECT'
+	option start_time '00:00:00'
+	option stop_time '13:00:00'
+	list src_mac '72:19:4D:54:A5:BB'
+	option family 'ipv4'
+	option enabled '0'
+
+config rule
+	option src 'lan'
+	option dest '*'
+	option name 'Peter-Pad-14:00-15:40'
+	option target 'REJECT'
+	option start_time '14:00:00'
+	option stop_time '15:40:00'
+	list src_mac '72:19:4D:54:A5:BB'
+	option family 'ipv4'
+	option enabled '0'
+
+config rule
+	option src 'lan'
+	option dest '*'
+	option name 'Peter-Pad-16:50-18:09'
+	option target 'REJECT'
+	option start_time '16:50:00'
+	option stop_time '18:09:00'
+	list src_mac '72:19:4D:54:A5:BB'
+	option family 'ipv4'
+	option enabled '0'
+
+config rule
+	option src 'lan'
+	option dest '*'
+	option name 'Peter-Pad-non4-18:50-23:59'
+	option target 'REJECT'
+	option start_time '18:50:00'
+	option stop_time '23:59:59'
+	list src_mac '72:19:4D:54:A5:BB'
+	option family 'ipv4'
+	option weekdays 'Sun Mon Tue Wed Fri Sat'
+	option enabled '0'
+
+config rule
+	option src 'lan'
+	option dest '*'
+	option name 'Peter-Pad-4-19:20-23:59'
+	option target 'REJECT'
+	option start_time '19:20:00'
+	option stop_time '23:59:59'
+	list src_mac '72:19:4D:54:A5:BB'
+	option family 'ipv4'
+	option weekdays 'Thu'
+	option enabled '0'
+

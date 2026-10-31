@@ -1,0 +1,85 @@
+
+config dnsmasq
+	option domainneeded '1'
+	option localise_queries '1'
+	option rebind_protection '0'
+	option local '/lan/'
+	option domain 'lan'
+	option expandhosts '1'
+	option cachesize '1000'
+	option authoritative '1'
+	option readethers '1'
+	option leasefile '/tmp/dhcp.leases'
+	option localservice '1'
+	option ednspacket_max '1232'
+	option localuse '1'
+
+config dhcp 'lan'
+	option interface 'lan'
+	option start '100'
+	option limit '150'
+	option leasetime '12h'
+	option dhcpv4 'server'
+	option force '1'
+	list dhcp_option 'tag:!proxy,3,192.168.3.1'
+	list dhcp_option 'tag:!proxy,6,192.168.3.1'
+	list dhcp_option 'tag:proxy,3,192.168.3.4'
+	list dhcp_option 'tag:proxy,6,192.168.3.4'
+
+config odhcpd 'odhcpd'
+	option maindhcp '0'
+	option leasefile '/tmp/hosts/odhcpd'
+	option leasetrigger '/usr/sbin/odhcpd-update'
+	option loglevel '4'
+	option piofolder '/tmp/odhcpd-piofolder'
+
+config host
+	option name 'AsusRouter'
+	list mac '10:7C:61:7F:73:38'
+	option ip '192.168.3.2'
+
+config host
+	option name 'R5S'
+	list mac '46:96:00:8F:F3:4C'
+	option ip '192.168.3.32'
+
+config host
+	option ip '192.168.3.33'
+	list mac 'A8:77:E5:0C:A7:4E'
+	option name 'Chuangwei-TV'
+
+config host
+	option name 'Apple-TVBox'
+	list mac '9C:3E:53:24:D5:F5'
+	option ip '192.168.3.34'
+
+config host
+	option name 'Xiaomi-TVBox1'
+	list mac 'F8:E4:3B:63:C8:14'
+	option ip '192.168.3.35'
+
+config host
+	option name 'Xiaomi-TVBox2'
+	list mac '80:9D:65:40:03:7C'
+	option ip '192.168.3.36'
+
+config host
+	option name 'dave-PC'
+	list mac 'C8:95:CE:A9:7F:D1'
+	option ip '192.168.3.37'
+
+config host
+	option name 'Davehome-PC'
+	list mac 'B0:41:6F:0D:0A:85'
+	option ip '192.168.3.38'
+
+config host
+	option name 'Dave-Phone'
+	option ip '192.168.3.40'
+	list mac 'CE:79:C2:66:E0:96'
+
+config host
+	option name 'Qinling-Phone'
+	list mac '40:D4:F6:2B:F5:C3'
+	option ip '192.168.3.41'
+

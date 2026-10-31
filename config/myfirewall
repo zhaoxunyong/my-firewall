@@ -1,0 +1,90 @@
+
+config settings 'settings'
+	option enabled '1'
+
+config rule
+	option name 'TV-Allday'
+	option match 'mac'
+	option protocol 'tcp_udp'
+	option action 'reject'
+	option timed '1'
+	option start_time '00:00:00'
+	option stop_time '23:59:59'
+	list src_mac 'A8:77:E5:0C:A7:4E'
+
+config rule
+	option name 'TVBox-20:00-06:30'
+	option match 'mac'
+	option protocol 'tcp_udp'
+	option action 'reject'
+	option timed '1'
+	option start_time '20:00:00'
+	option stop_time '06:30:00'
+	list src_mac 'F8:E4:3B:63:C8:14'
+	list src_mac '80:9D:65:40:03:7C'
+	list src_mac '9C:3E:53:0F:7D:1F'
+	list src_mac '9C:3E:53:24:D5:F5'
+
+config rule
+	option name 'Eino-22:00-08:00'
+	option match 'mac'
+	option protocol 'tcp_udp'
+	option action 'reject'
+	option timed '1'
+	option start_time '22:00:00'
+	option stop_time '08:00:00'
+	list src_mac 'A2:60:CE:CC:E0:55'
+	list src_mac 'A2:1B:86:04:DB:FA'
+
+config rule
+	option name 'Peter-Pad-00:00-13:00'
+	option match 'mac'
+	option protocol 'tcp_udp'
+	option action 'reject'
+	option timed '1'
+	option start_time '00:00:00'
+	option stop_time '13:00:00'
+	list src_mac '72:19:4D:54:A5:BB'
+
+config rule
+	option name 'Peter-Pad-14:00-15:40'
+	option match 'mac'
+	option protocol 'tcp_udp'
+	option action 'reject'
+	option timed '1'
+	option start_time '14:00:00'
+	option stop_time '15:40:00'
+	list src_mac '72:19:4D:54:A5:BB'
+
+config rule
+	option name 'Peter-Pad-16:50-18:09'
+	option match 'mac'
+	option protocol 'tcp_udp'
+	option action 'reject'
+	option timed '1'
+	option start_time '16:50:00'
+	option stop_time '18:09:00'
+	list src_mac '72:19:4D:54:A5:BB'
+
+config rule
+	option name 'Peter-Pad-non4-18:50-23:59'
+	option match 'mac'
+	option protocol 'tcp_udp'
+	option action 'reject'
+	option timed '1'
+	option start_time '18:50:00'
+	option stop_time '23:59:59'
+	option weekdays 'Sun Mon Tue Wed Fri Sat'
+	list src_mac '72:19:4D:54:A5:BB'
+
+config rule
+	option name 'Peter-Pad-4-19:20-23:59'
+	option match 'mac'
+	option protocol 'tcp_udp'
+	option action 'reject'
+	option timed '1'
+	option start_time '19:20:00'
+	option stop_time '23:59:59'
+	option weekdays 'Thu'
+	list src_mac '72:19:4D:54:A5:BB'
+

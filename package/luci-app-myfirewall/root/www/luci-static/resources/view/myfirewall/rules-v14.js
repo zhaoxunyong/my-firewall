@@ -1,5 +1,7 @@
 'use strict';
 'require view';
+'require rpc';
+'require ui';
 'require form';
 'require uci';
 
@@ -56,6 +58,68 @@ function validIPAddress(value) {
 	catch (e) {
 		return false;
 	}
+}
+
+function validMACAddress(value) {
+	return /^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/.test(String(value || '').trim());
+}
+
+function hostAddressList(value) {
+	const list = Array.isArray(value) ? value : (value == null ? [] : [ value ]);
+
+	return list.map(function(address) {
+		if (address && typeof(address) == 'object')
+			address = address.address;
+
+		return String(address || '').trim();
+	}).filter(function(address) {
+		return address.length > 0;
+	});
+}
+
+function addAddressChoice(choices, seen, value, label) {
+	const key = String(value).toLowerCase();
+
+	if (seen[key])
+		return;
+
+	seen[key] = true;
+	choices.push({ value: value, label: label });
+}
+
+function hostAddressChoices(hosts, kind) {
+	const choices = [];
+	const seen = {};
+
+	if (!hosts || typeof(hosts) != 'object')
+		return choices;
+
+	Object.keys(hosts).sort().forEach(function(rawMac) {
+		const host = hosts[rawMac] || {};
+		const mac = String(rawMac || '').trim().toUpperCase().replace(/-/g, ':');
+		const name = String(host.name || '').trim();
+		const ipv4 = hostAddressList(host.ipaddrs || host.ipv4).filter(validIPAddress);
+		const ipv6 = hostAddressList(host.ip6addrs || host.ipv6).filter(validIPAddress);
+
+		if (kind == 'mac') {
+			if (!validMACAddress(mac))
+				return;
+
+			const hint = name || ipv4[0] || ipv6[0];
+			addAddressChoice(choices, seen, mac,
+				hint ? mac + ' (' + hint + ')' : mac);
+			return;
+		}
+
+		ipv4.concat(ipv6).forEach(function(address) {
+			const hint = name || mac;
+
+			addAddressChoice(choices, seen, address.toLowerCase(),
+				hint ? address + ' (' + hint + ')' : address);
+		});
+	});
+
+	return choices;
 }
 
 function normalizeAddressValues(value, uppercase) {
@@ -126,16 +190,46 @@ function timeText(section_id) {
 	]);
 }
 
+const AddressDynamicList = form.DynamicList.extend({
+	renderWidget: function(section_id, option_index, cfgvalue) {
+		const value = (cfgvalue != null) ? cfgvalue : this.default;
+		const choices = this.transformChoices();
+		const widget = new ui.DynamicList(L.toArray(value), choices, {
+			id: this.cbid(section_id),
+			sort: this.keylist,
+			optional: this.optional || this.rmempty,
+			datatype: this.datatype,
+			placeholder: choices ? null : this.custom_placeholder,
+			select_placeholder: this.select_placeholder,
+			custom_placeholder: this.custom_placeholder,
+			validate: this.getValidator(section_id),
+			disabled: (this.readonly != null) ? this.readonly : this.map.readonly
+		});
+
+		return widget.render();
+	}
+});
+
 return view.extend({
+	callHostHints: rpc.declare({
+		object: 'luci-rpc',
+		method: 'getHostHints',
+		expect: { '': {} }
+	}),
+
 	load: function() {
-		return uci.load('myfirewall');
+		return Promise.all([
+			uci.load('myfirewall'),
+			L.resolveDefault(this.callHostHints(), {})
+		]);
 	},
 
-	render: function() {
+	render: function(data) {
+		const hosts = (data && data[1]) || {};
 		let m, s, o;
 
 		m = new form.Map('myfirewall', _('MyFirewall'),
-			_('界面版本 r12。匹配指定 MAC/IP 设备前往非本机地址的 TCP/UDP 外部连接。规则由 fw4 和 nftables 执行，用于解决代理后自带防火墙规则不生效的问题。'));
+			_('界面版本 r14。匹配指定 MAC/IP 设备前往非本机地址的 TCP/UDP 外部连接。规则由 fw4 和 nftables 执行，用于解决代理后自带防火墙规则不生效的问题。'));
 
 		s = m.section(form.TypedSection, 'settings', _('全局设置'));
 		s.anonymous = true;
@@ -188,13 +282,17 @@ return view.extend({
 			return 'both';
 		};
 
-		o = s.option(form.DynamicList, 'src_mac', _('源 MAC 地址'));
-		o.placeholder = _('输入 MAC，例如 AA:BB:CC:DD:EE:FF，然后点击 +');
+		o = s.option(AddressDynamicList, 'src_mac', _('源 MAC 地址'));
+		o.select_placeholder = _('— 选择已发现设备 —');
+		o.custom_placeholder = _('— 自定义 —');
 		o.rmempty = false;
 		o.modalonly = true;
 		o.depends('match', 'mac');
 		o.depends('match', 'both');
-		o.description = _('可连续添加多个 MAC，规则命中其中任意一个。');
+		o.description = _('可从已发现设备中选择，也可输入自定义 MAC；可连续添加多个，规则命中其中任意一个。');
+		hostAddressChoices(hosts, 'mac').forEach(function(choice) {
+			o.value(choice.value, choice.label);
+		});
 		o.validate = function(section_id, value) {
 			if (value == null || value == '')
 				return true;
@@ -202,7 +300,7 @@ return view.extend({
 			const values = L.toArray(value);
 
 			for (let i = 0; i < values.length; i++)
-				if (!/^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/.test(String(values[i]).trim()))
+				if (!validMACAddress(values[i]))
 					return _('请输入有效的 MAC 地址');
 
 			return true;
@@ -211,13 +309,17 @@ return view.extend({
 			return this.super('write', [ section_id, normalizeAddressValues(value, true) ]);
 		};
 
-		o = s.option(form.DynamicList, 'src_ip', _('源 IP 地址'));
-		o.placeholder = _('输入 IPv4/IPv6 地址，然后点击 +');
+		o = s.option(AddressDynamicList, 'src_ip', _('源 IP 地址'));
+		o.select_placeholder = _('— 选择已发现设备 —');
+		o.custom_placeholder = _('— 自定义 —');
 		o.rmempty = false;
 		o.modalonly = true;
 		o.depends('match', 'ip');
 		o.depends('match', 'both');
-		o.description = _('可连续添加多个 IPv4/IPv6 地址，规则命中其中任意一个。');
+		o.description = _('可从已发现设备中选择，也可输入自定义 IPv4/IPv6 地址；可连续添加多个，规则命中其中任意一个。');
+		hostAddressChoices(hosts, 'ip').forEach(function(choice) {
+			o.value(choice.value, choice.label);
+		});
 		o.validate = function(section_id, value) {
 			if (value == null || value == '')
 				return true;

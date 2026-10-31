@@ -14,7 +14,7 @@ DIST = ROOT / "dist"
 
 NAME = "luci-app-myfirewall"
 VERSION = "1.0.0"
-RELEASE = "r12"
+RELEASE = "r14"
 ARCH = "all"
 FILENAME = f"{NAME}_{VERSION}-{RELEASE}_{ARCH}.ipk"
 
